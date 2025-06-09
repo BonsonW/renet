@@ -2,12 +2,12 @@ use std::{collections::{HashMap, HashSet}, net::{IpAddr, SocketAddr}};
 
 use renet::{ClientId, RenetServer};
 use steamworks::{
-    networking_sockets::{InvalidHandle, ListenSocket, NetConnection},
-    networking_types::{ListenSocketEvent, NetConnectionEnd, NetworkingConfigEntry, NetworkingConfigValue, SendFlags},
-    Client, ClientManager, FriendFlags, Friends, LobbyId, Manager, Matchmaking, SteamId,
+    networking_sockets::{InvalidHandle, ListenSocket, NetConnection}, networking_types::{ListenSocketEvent, NetConnectionEnd, NetworkingConfigEntry, NetworkingMessage}, networking_utils::NetworkingUtils, Client, ClientManager, FriendFlags, Friends, LobbyId, Manager, Matchmaking, SteamId
 };
 
 use super::MAX_MESSAGE_BATCH_SIZE;
+
+const MAX_MESSAGE_BUFFER_SIZE: usize = 500 * 1024;
 
 pub enum AccessPermission {
     /// Everyone can connect
@@ -30,11 +30,13 @@ pub struct SteamServerConfig {
 #[cfg_attr(feature = "bevy", derive(bevy_ecs::resource::Resource))]
 pub struct SteamServerTransport<Manager = ClientManager> {
     listen_socket: ListenSocket<Manager>,
+    utils: NetworkingUtils<Manager>,
     matchmaking: Matchmaking<Manager>,
     friends: Friends<Manager>,
     max_clients: usize,
     access_permission: AccessPermission,
     connections: HashMap<ClientId, NetConnection<Manager>>,
+    messages: Vec<NetworkingMessage<Manager>>
 }
 
 impl<T: Manager + 'static> SteamServerTransport<T> {
@@ -43,9 +45,13 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
         let listen_socket = client.networking_sockets().create_listen_socket_p2p(0, options)?;
         let matchmaking = client.matchmaking();
         let friends = client.friends();
+        let utils = client.networking_utils();
+        let messages = vec![];
 
         Ok(Self {
             listen_socket,
+            utils,
+            messages,
             matchmaking,
             friends,
             max_clients: config.max_clients,
@@ -56,13 +62,16 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
 
     pub fn new_ip(client: &Client<T>, config: SteamServerConfig, ip: IpAddr, port: u16, options: Vec<NetworkingConfigEntry>) -> Result<Self, InvalidHandle> {
         let server_addr = SocketAddr::new(ip.into(), port);
-        
         let listen_socket = client.networking_sockets().create_listen_socket_ip(server_addr, options)?;
         let matchmaking = client.matchmaking();
         let friends = client.friends();
+        let utils = client.networking_utils();
+        let messages = vec![];
 
         Ok(Self {
             listen_socket,
+            utils,
+            messages,
             matchmaking,
             friends,
             max_clients: config.max_clients,
@@ -174,12 +183,23 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
                 continue;
             };
             let packets = server.get_packets_to_send(client_id).unwrap();
-            // TODO: while this works fine we should probaly use the send_messages function from the listen_socket
+
+            let mut total = 0;
             for packet in packets {
-                if let Err(e) = connection.send_message(&packet, SendFlags::UNRELIABLE_NO_NAGLE) {
+                if packet.len() + total >= MAX_MESSAGE_BUFFER_SIZE {
+                    self.listen_socket.send_messages(self.messages.drain(..));
+                }
+
+                total += packet.len();
+                let mut message = self.utils.allocate_message(packet.len());
+                if let Err(e) = message.set_data(packet) {
                     log::error!("Failed to send packet to client {client_id}: {e}");
                     continue 'clients;
                 }
+                self.messages.push(message);
+            }
+            if self.messages.len() > 0 { // send remaining packets
+                self.listen_socket.send_messages(self.messages.drain(..));
             }
 
             if let Err(e) = connection.flush_messages() {

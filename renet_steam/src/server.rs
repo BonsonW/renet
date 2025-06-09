@@ -176,7 +176,7 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
             let packets = server.get_packets_to_send(client_id).unwrap();
             // TODO: while this works fine we should probaly use the send_messages function from the listen_socket
             for packet in packets {
-                if let Err(e) = connection.send_message(&packet, SendFlags::RELIABLE) {
+                if let Err(e) = connection.send_message(&packet, SendFlags::UNRELIABLE_NO_NAGLE) {
                     log::error!("Failed to send packet to client {client_id}: {e}");
                     continue 'clients;
                 }

@@ -40,7 +40,6 @@ impl SteamClientTransport {
         let connection = client
             .networking_sockets()
             .connect_by_ip_address(server_addr, options)?;
-        let _ = client.networking_sockets().configure_connection_lanes(&connection, 4, &[0, 1], &[2, 1]);
         Ok(Self {
             networking_sockets,
             state: ConnectionState::Connected { connection },

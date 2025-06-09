@@ -7,7 +7,7 @@ use steamworks::{
 
 use super::MAX_MESSAGE_BATCH_SIZE;
 
-const MAX_MESSAGE_BUFFER_SIZE: usize = 1024 * 1024;
+const MAX_MESSAGE_BUFFER_SIZE: usize = 500 * 1024;
 
 pub enum AccessPermission {
     /// Everyone can connect

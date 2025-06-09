@@ -182,11 +182,7 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
             };
             let packets = server.get_packets_to_send(client_id).unwrap();
 
-            let mut max_bytes = 500 * 1024;
             for packet in packets {
-                max_bytes -= packet.len() as i32;
-                if max_bytes < 0 || max_bytes > (500 * 1024) { break; }
-                
                 let mut message = self.utils.allocate_message(0);
                 message.set_connection(connection);
                 message.set_send_flags(SendFlags::UNRELIABLE_NO_NAGLE);

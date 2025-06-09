@@ -164,12 +164,7 @@ impl SteamClientTransport {
             unreachable!()
         };
         let packets = client.get_packets_to_send();
-
-        let mut max_bytes = 500 * 1024;
         for packet in packets {
-            max_bytes -= packet.len() as i32;
-            if max_bytes < 0 || max_bytes > (500 * 1024) { break; }
-
             connection.send_message(&packet, SendFlags::UNRELIABLE_NO_NAGLE)?;
         }
 

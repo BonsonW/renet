@@ -192,13 +192,9 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
                 }
                 self.messages.push(message);
             }
-            if !self.messages.is_empty() { // send remaining packets
-                self.listen_socket.send_messages(self.messages.drain(..));
-            }
-
-            if let Err(e) = connection.flush_messages() {
-                log::error!("Failed flush messages for {client_id}: {e}");
-            }
+        }
+        if !self.messages.is_empty() {
+            self.listen_socket.send_messages(self.messages.drain(..));
         }
     }
 }

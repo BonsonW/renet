@@ -5,8 +5,6 @@ use steamworks::{
     networking_sockets::{InvalidHandle, ListenSocket, NetConnection}, networking_types::{ListenSocketEvent, NetConnectionEnd, NetworkingConfigEntry, NetworkingMessage, SendFlags}, networking_utils::NetworkingUtils, Client, ClientManager, FriendFlags, Friends, LobbyId, Manager, Matchmaking, SteamId
 };
 
-use crate::MAX_MESSAGE_BUFFER_SIZE;
-
 use super::MAX_MESSAGE_BATCH_SIZE;
 
 pub enum AccessPermission {
@@ -184,24 +182,17 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
             };
             let packets = server.get_packets_to_send(client_id).unwrap();
 
-            let mut total = 0;
             for packet in packets {
-                if packet.len() + total >= MAX_MESSAGE_BUFFER_SIZE {
-                    self.listen_socket.send_messages(self.messages.drain(..));
-                    total = 0;
-                }
-
-                total += packet.len();
                 let mut message = self.utils.allocate_message(0);
                 message.set_connection(connection);
-                message.set_send_flags(SendFlags::UNRELIABLE_NO_DELAY);
+                message.set_send_flags(SendFlags::UNRELIABLE);
                 if let Err(e) = message.set_data(packet) {
                     log::error!("Failed to send packet to client {client_id}: {e}");
                     continue 'clients;
                 }
                 self.messages.push(message);
             }
-            if self.messages.len() > 0 { // send remaining packets
+            if !self.messages.is_empty() { // send remaining packets
                 self.listen_socket.send_messages(self.messages.drain(..));
             }
 

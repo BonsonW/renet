@@ -7,7 +7,7 @@ use steamworks::{
 
 use super::MAX_MESSAGE_BATCH_SIZE;
 
-const MAX_MESSAGE_BUFFER_SIZE: usize = 500 * 1024;
+const MAX_MESSAGE_BUFFER_SIZE: usize = 1024 * 1024;
 
 pub enum AccessPermission {
     /// Everyone can connect
@@ -193,7 +193,7 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
                 total += packet.len();
                 let mut message = self.utils.allocate_message(0);
                 message.set_connection(connection);
-                message.set_send_flags(SendFlags::RELIABLE_NO_NAGLE);
+                message.set_send_flags(SendFlags::UNRELIABLE_NO_DELAY);
                 if let Err(e) = message.set_data(packet) {
                     log::error!("Failed to send packet to client {client_id}: {e}");
                     continue 'clients;

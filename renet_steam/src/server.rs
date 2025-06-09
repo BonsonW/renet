@@ -191,7 +191,7 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
                 }
 
                 total += packet.len();
-                let mut message = self.utils.allocate_message(packet.len());
+                let mut message = self.utils.allocate_message(0);
                 if let Err(e) = message.set_data(packet) {
                     log::error!("Failed to send packet to client {client_id}: {e}");
                     continue 'clients;

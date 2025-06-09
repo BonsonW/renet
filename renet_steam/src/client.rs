@@ -165,7 +165,7 @@ impl SteamClientTransport {
         };
         let packets = client.get_packets_to_send();
         for packet in packets {
-            connection.send_message(&packet, SendFlags::RELIABLE_NO_NAGLE)?;
+            connection.send_message(&packet, SendFlags::UNRELIABLE_NO_NAGLE)?;
         }
 
         connection.flush_messages()

@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, net::{IpAddr, SocketAddr}};
 
 use renet::{ClientId, RenetServer};
 use steamworks::{
@@ -41,6 +41,23 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
     pub fn new(client: &Client<T>, config: SteamServerConfig) -> Result<Self, InvalidHandle> {
         let options: Vec<NetworkingConfigEntry> = Vec::new();
         let listen_socket = client.networking_sockets().create_listen_socket_p2p(0, options)?;
+        let matchmaking = client.matchmaking();
+        let friends = client.friends();
+
+        Ok(Self {
+            listen_socket,
+            matchmaking,
+            friends,
+            max_clients: config.max_clients,
+            access_permission: config.access_permission,
+            connections: HashMap::new(),
+        })
+    }
+
+    pub fn new_ip(client: &Client<T>, config: SteamServerConfig, ip: IpAddr, port: u16) -> Result<Self, InvalidHandle> {
+        let server_addr = SocketAddr::new(ip.into(), port);
+        let options: Vec<NetworkingConfigEntry> = Vec::new();
+        let listen_socket = client.networking_sockets().create_listen_socket_ip(server_addr, options)?;
         let matchmaking = client.matchmaking();
         let friends = client.friends();
 

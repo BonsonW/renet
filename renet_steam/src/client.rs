@@ -1,3 +1,5 @@
+use std::net::{IpAddr, SocketAddr};
+
 use super::MAX_MESSAGE_BATCH_SIZE;
 use renet::RenetClient;
 use steamworks::{
@@ -25,6 +27,21 @@ impl SteamClientTransport {
         let connection = client
             .networking_sockets()
             .connect_p2p(NetworkingIdentity::new_steam_id(*steam_id), 0, options)?;
+        Ok(Self {
+            networking_sockets,
+            state: ConnectionState::Connected { connection },
+        })
+    }
+
+    pub fn new_ip(client: &steamworks::Client<ClientManager>, ip: IpAddr, port: u16) -> Result<Self, InvalidHandle> {
+        let server_addr = SocketAddr::new(ip.into(), port);
+
+        let networking_sockets = client.networking_sockets();
+        
+        let options = Vec::new();
+        let connection = client
+            .networking_sockets()
+            .connect_by_ip_address(server_addr, options)?;
         Ok(Self {
             networking_sockets,
             state: ConnectionState::Connected { connection },

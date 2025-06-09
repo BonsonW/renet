@@ -5,9 +5,9 @@ use steamworks::{
     networking_sockets::{InvalidHandle, ListenSocket, NetConnection}, networking_types::{ListenSocketEvent, NetConnectionEnd, NetworkingConfigEntry, NetworkingMessage, SendFlags}, networking_utils::NetworkingUtils, Client, ClientManager, FriendFlags, Friends, LobbyId, Manager, Matchmaking, SteamId
 };
 
-use super::MAX_MESSAGE_BATCH_SIZE;
+use crate::MAX_MESSAGE_BUFFER_SIZE;
 
-const MAX_MESSAGE_BUFFER_SIZE: usize = 1024 * 1024;
+use super::MAX_MESSAGE_BATCH_SIZE;
 
 pub enum AccessPermission {
     /// Everyone can connect
@@ -188,6 +188,7 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
             for packet in packets {
                 if packet.len() + total >= MAX_MESSAGE_BUFFER_SIZE {
                     self.listen_socket.send_messages(self.messages.drain(..));
+                    total = 0;
                 }
 
                 total += packet.len();

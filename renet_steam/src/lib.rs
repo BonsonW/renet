@@ -1,4 +1,5 @@
 const MAX_MESSAGE_BATCH_SIZE: usize = 512;
+const MAX_MESSAGE_BUFFER_SIZE: usize = 1024 * 1024;
 
 mod client;
 mod server;

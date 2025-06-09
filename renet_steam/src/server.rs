@@ -2,7 +2,7 @@ use std::{collections::{HashMap, HashSet}, net::{IpAddr, SocketAddr}};
 
 use renet::{ClientId, RenetServer};
 use steamworks::{
-    networking_sockets::{InvalidHandle, ListenSocket, NetConnection}, networking_types::{ListenSocketEvent, NetConnectionEnd, NetworkingConfigEntry, NetworkingMessage}, networking_utils::NetworkingUtils, Client, ClientManager, FriendFlags, Friends, LobbyId, Manager, Matchmaking, SteamId
+    networking_sockets::{InvalidHandle, ListenSocket, NetConnection}, networking_types::{ListenSocketEvent, NetConnectionEnd, NetworkingConfigEntry, NetworkingMessage, SendFlags}, networking_utils::NetworkingUtils, Client, ClientManager, FriendFlags, Friends, LobbyId, Manager, Matchmaking, SteamId
 };
 
 use super::MAX_MESSAGE_BATCH_SIZE;
@@ -192,6 +192,8 @@ impl<T: Manager + 'static> SteamServerTransport<T> {
 
                 total += packet.len();
                 let mut message = self.utils.allocate_message(0);
+                message.set_connection(connection);
+                message.set_send_flags(SendFlags::UNRELIABLE_NO_NAGLE);
                 if let Err(e) = message.set_data(packet) {
                     log::error!("Failed to send packet to client {client_id}: {e}");
                     continue 'clients;

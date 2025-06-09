@@ -4,7 +4,7 @@ use super::MAX_MESSAGE_BATCH_SIZE;
 use renet::RenetClient;
 use steamworks::{
     networking_sockets::{InvalidHandle, NetConnection, NetworkingSockets},
-    networking_types::{NetConnectionEnd, NetworkingConnectionState, NetworkingIdentity, SendFlags},
+    networking_types::{NetConnectionEnd, NetworkingConfigEntry, NetworkingConnectionState, NetworkingIdentity, SendFlags},
     ClientManager, SteamError, SteamId,
 };
 
@@ -33,12 +33,10 @@ impl SteamClientTransport {
         })
     }
 
-    pub fn new_ip(client: &steamworks::Client<ClientManager>, ip: IpAddr, port: u16) -> Result<Self, InvalidHandle> {
+    pub fn new_ip(client: &steamworks::Client<ClientManager>, ip: IpAddr, port: u16, options: Vec<NetworkingConfigEntry>) -> Result<Self, InvalidHandle> {
         let server_addr = SocketAddr::new(ip.into(), port);
 
         let networking_sockets = client.networking_sockets();
-        
-        let options = Vec::new();
         let connection = client
             .networking_sockets()
             .connect_by_ip_address(server_addr, options)?;
